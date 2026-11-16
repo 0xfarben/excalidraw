@@ -1,0 +1,9 @@
+{
+    "extends": "@repo/typescript-config/base.json",
+    "compilerOptions" : {
+        "rootDir" : "./src",
+        "outDir": "./dist"
+    }
+}
+
+// import this package in ./package.json and run "pnpm i" to resolve the above pathname.
