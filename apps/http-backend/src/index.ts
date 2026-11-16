@@ -2,12 +2,9 @@ import express from "express";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import {authMiddleWare} from "./middleware"
+import { HTTP_PORT, JWT_SECRET } from "@repo/backend-common/config"
 
-// auto-load the .env file
-dotenv.config()
-
-const PORT = process.env.PORT;
-const JWT_SECRET = process.env.JWT_SECRET || "";
+import { UserSignUpSchema, UserSignInSchema, CreateRoomSchema } from "@repo/common/types";
 
 const app = express();
 app.use(express.json());
@@ -19,6 +16,15 @@ app.get("/", (re, res) => {
 app.post("/signup", (req, res) => {
     const { email, password, confirmPassword } = req.body;
     const userId = 1;
+
+    const data = UserSignUpSchema.safeParse({email, password, confirmPassword})
+
+    if ( !data.success ) {
+        res.json({
+            message: "Incorrect Inputs"
+        })
+    } 
+    
     // async fn. to save the user in database. && 
     // hash the password before saving to database
     // use bcrypt lib.
@@ -52,6 +58,6 @@ app.get("/create-room", authMiddleWare, (req, res) => {
     res.send("<h1>Welcome to Create Room page</h1>")
 });
 
-app.listen( PORT, () => {
-    console.log(`Backend URL -> http://localhost:${PORT}`)
+app.listen( HTTP_PORT, () => {
+    console.log(`Backend URL -> http://localhost:${HTTP_PORT}`)
 })
