@@ -1,8 +1,9 @@
 import express from "express";
 import jwt from "jsonwebtoken";
-import dotenv from "dotenv";
+import bcrypt from "bcrypt";
 import {authMiddleWare} from "./middleware"
 import { HTTP_PORT, JWT_SECRET } from "@repo/backend-common/config"
+import { prisma } from "@repo/db/client";
 
 import { UserSignUpSchema, UserSignInSchema, CreateRoomSchema } from "@repo/common/types";
 
@@ -13,45 +14,103 @@ app.get("/", (re, res) => {
     res.send('<h1>Hi there</h1>');
 })
 
-app.post("/signup", (req, res) => {
-    const { email, password, confirmPassword } = req.body;
-    const userId = 1;
+app.post("/signup", async (req, res) => {
+    const parsedData = UserSignUpSchema.safeParse(req.body)
 
-    const data = UserSignUpSchema.safeParse({email, password, confirmPassword})
-
-    if ( !data.success ) {
-        res.json({
+    if ( !parsedData.success ) {
+        return res.json({
             message: "Incorrect Inputs"
         })
-    } 
+    }
+
+    // check both the passwords
+    if ( parsedData.data.password !== parsedData.data.confirmPassword) {
+        return res.json({
+            message: "Password doesn't match"
+        })
+    }
     
     // async fn. to save the user in database. && 
     // hash the password before saving to database
-    // use bcrypt lib.
-    // try {
-
-    // } catch (DBSaveError) {
-
-    // }
-
-    // Create JWT Token with the userId && email
-    var token = "";
+    // using bcrypt lib.
+    const { name, email, password } = parsedData.data;
     try {
-        token = jwt.sign({userId, email}, JWT_SECRET);
-        console.log(token);
-        res.json({
-            "jwt": token
-        })
-    } catch (JWTCreationError) {
-        console.log(JWTCreationError);
-        res.json({
-            "Error": JWTCreationError
+        // hash the password
+        const saltRounds = 12;
+        const hashPassword = await bcrypt.hash( password , saltRounds)
+
+        // Save user with the HASHED password
+        const user = await prisma.user.create({
+            data: {
+                name,
+                email,
+                password: hashPassword
+            }
+        });
+
+        console.log(`Successful User Creation: ${user.id}`);
+        return res.status(201).json({
+            userId: user.id
+        });
+    } catch (error) {
+        console.error("Signup Error:", error);
+        return res.status(500).json({
+            message: "Error saving data in Database. Try again later."
         });
     }
+    
 });
+app.post("/signin", async (req, res) => {
+    const parsedData = UserSignInSchema.safeParse(req.body);
 
-app.post("/signin", authMiddleWare, (req, res) => {
-    res.send("<h1>Welcome to Login page</h1>")
+    if ( !parsedData.success ) {
+        return res.status(400).json({
+            message: "Incorrect Inputs",
+            errors: parsedData.error
+        });
+    }
+
+    try {   
+        // Before any checks, see whether the current email exists in DB or not
+        const user = await prisma.user.findFirst({
+            where: {
+                email: parsedData.data.email
+            }
+        });
+
+        if (!user) {
+            return res.status(403).json({
+                message: `The user with E-mail ${parsedData.data.email} doesn't exist. Please Sign Up`
+            });
+        }
+
+        // compare the hashed passwords here
+        const isMatch = await bcrypt.compare(parsedData.data.password, user.password);
+        
+        if (!isMatch) {
+            return res.status(403).json({
+                message: "Password is wrong."
+            });
+        }
+
+        // Create JWT Token
+        const token = jwt.sign(
+            { 
+                userId: user.id, 
+                email: user.email 
+            }
+        , JWT_SECRET );
+
+        return res.json({
+            jwt: token
+        });
+
+    } catch (error) {
+        console.error("Signin Error:", error);
+        return res.status(500).json({
+            message: "Internal server error during signin"
+        });
+    }
 });
 
 app.get("/create-room", authMiddleWare, (req, res) => {

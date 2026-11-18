@@ -4,9 +4,11 @@
   "description": "",
   "main": "index.js",
   "exports": {
-    "./client": "./src/index.ts"
+    "./client": "./dist/src/index.js"
   },
   "scripts": {
+    "generate": "prisma generate --config prisma7.config.ts",
+    "build": "npm run generate && tsc -b",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

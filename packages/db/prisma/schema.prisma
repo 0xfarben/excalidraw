@@ -14,10 +14,10 @@ datasource db {
 
 model User {
   id        String  @id @default(uuid())
-  email     String  
-  password  String
   name      String
-  photo     String
+  email     String  @unique
+  password  String
+  photo     String?
   // every user can be in multiple rooms
 // 1-to-Many Relationship
   rooms     Room[]

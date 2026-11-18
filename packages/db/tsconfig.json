@@ -3,6 +3,8 @@
     
     // prisma related configs
     "compilerOptions": {
+        "rootDir": ".",
+        "outDir": "./dist",
         // "module": "ESNext",
         // "moduleResolution": "bundler",
         // "target": "ES2023",
