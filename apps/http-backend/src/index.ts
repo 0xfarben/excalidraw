@@ -17,6 +17,7 @@ app.get("/", (re, res) => {
 app.post("/signup", async (req, res) => {
     const parsedData = UserSignUpSchema.safeParse(req.body)
 
+    // Input Validation
     if ( !parsedData.success ) {
         return res.json({
             message: "Incorrect Inputs"
@@ -29,7 +30,7 @@ app.post("/signup", async (req, res) => {
             message: "Password doesn't match"
         })
     }
-    
+
     // async fn. to save the user in database. && 
     // hash the password before saving to database
     // using bcrypt lib.
@@ -63,6 +64,7 @@ app.post("/signup", async (req, res) => {
 app.post("/signin", async (req, res) => {
     const parsedData = UserSignInSchema.safeParse(req.body);
 
+    // Input Validation
     if ( !parsedData.success ) {
         return res.status(400).json({
             message: "Incorrect Inputs",
@@ -113,8 +115,40 @@ app.post("/signin", async (req, res) => {
     }
 });
 
-app.get("/create-room", authMiddleWare, (req, res) => {
-    res.send("<h1>Welcome to Create Room page</h1>")
+app.post("/create-room", authMiddleWare, async (req, res) => {
+    const parsedData = CreateRoomSchema.safeParse(req.body);
+    
+    // Input Validation
+    if ( !parsedData.success ) {
+        return res.status(400).json({
+            message: "Incorrect Inputs",
+            errors: parsedData.error
+        });
+    }
+
+    try {
+        // @ts-ignore
+        const userId = req.userId;
+
+        console.log(`User ID: ${userId}`);
+    
+        const room = await prisma.room.create({
+            data: {
+                slug: parsedData.data.slug,
+                adminId: userId
+            }
+        })
+
+        console.log(`Successful Room Creation: ${room.id}\nSlug:${room.slug}`);
+        return res.status(201).json({
+            roomId: room.id
+        });
+    } catch( error ) {
+        console.log(`Create Room Error: ${error}`);
+        return res.status(500).json({
+            message: "Internal Server Error while creating the room."
+        })
+    }
 });
 
 app.listen( HTTP_PORT, () => {
