@@ -18,6 +18,7 @@ This Turborepo includes the following packages/apps:
 - `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
 - `@repo/backend-common`: `src/index.ts` used for retrieval of environment variables.
 - `@repo/common`: `src/types.ts` used for zod validation.
+- `@repo/db`: `src/index.ts` code for database via Prisma client ORM (DB- Postgres).
 
 Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
 
