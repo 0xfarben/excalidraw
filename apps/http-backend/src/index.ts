@@ -10,7 +10,7 @@ import { UserSignUpSchema, UserSignInSchema, CreateRoomSchema } from "@repo/comm
 const app = express();
 app.use(express.json());
 
-app.get("/", (re, res) => {
+app.get("/", (req, res) => {
     res.send('<h1>Hi there</h1>');
 })
 
@@ -144,9 +144,15 @@ app.post("/create-room", authMiddleWare, async (req, res) => {
             roomId: room.id
         });
     } catch( error ) {
+        if (error instanceof Error && error.message.includes("Unique constraint failed")) {
+            console.log("Unique constraint failing")
+            return res.status(500).json({
+                message: "Room already exists"
+            })
+        }
         console.log(`Create Room Error: ${error}`);
         return res.status(500).json({
-            message: "Internal Server Error while creating the room."
+            message: "Internal Server Error while creating the room"
         })
     }
 });
