@@ -35,6 +35,7 @@ app.post("/signup", async (req, res) => {
     // hash the password before saving to database
     // using bcrypt lib.
     const { name, email, password } = parsedData.data;
+    const normalizedEmail = email.trim().toLowerCase();
     try {
         // hash the password
         const saltRounds = 12;
@@ -43,8 +44,8 @@ app.post("/signup", async (req, res) => {
         // Save user with the HASHED password
         const user = await prisma.user.create({
             data: {
-                name,
-                email,
+                name: name.trim(),
+                email: normalizedEmail,
                 password: hashPassword
             }
         });
@@ -53,7 +54,13 @@ app.post("/signup", async (req, res) => {
         return res.status(201).json({
             userId: user.id
         });
-    } catch (error) {
+    } catch (error: any) {
+        if (error?.code === "P2002") {
+            return res.status(409).json({
+                message: "A user with this email already exists."
+            });
+        }
+
         console.error("Signup Error:", error);
         return res.status(500).json({
             message: "Error saving data in Database. Try again later."
@@ -61,6 +68,7 @@ app.post("/signup", async (req, res) => {
     }
     
 });
+
 app.post("/signin", async (req, res) => {
     const parsedData = UserSignInSchema.safeParse(req.body);
 
@@ -76,13 +84,13 @@ app.post("/signin", async (req, res) => {
         // Before any checks, see whether the current email exists in DB or not
         const user = await prisma.user.findFirst({
             where: {
-                email: parsedData.data.email
+                email: parsedData.data.email.trim().toLowerCase()
             }
         });
 
         if (!user) {
             return res.status(403).json({
-                message: `The user with E-mail ${parsedData.data.email} doesn't exist. Please Sign Up`
+                message: `The user with E-mail ${parsedData.data.email.trim().toLowerCase()} doesn't exist. Please Sign Up`
             });
         }
 
@@ -156,6 +164,53 @@ app.post("/create-room", authMiddleWare, async (req, res) => {
         })
     }
 });
+
+// old chat messages should come via HTTP layer,
+// new messages will come via WebSockets, while saving the chats to DB via Queue.
+app.get("/chats/:roomId", async (req, res) => {
+    const roomId = Number(req.params.roomId);
+
+    // take the last 50 messages, and order by latest msg to first.
+    try {
+        const messages = await prisma.chat.findMany({
+            where: {
+                roomId: roomId
+            },
+            orderBy: {
+                id: "desc"
+            },
+            take: 50
+        })
+
+        res.json({
+            messages: messages
+        })
+    } catch(e) {
+        res.json({
+            message: "Internal Server Error while fetching the chats"
+        })
+    }
+})
+
+app.get("/room/:slug", async (req, res) => {
+    const slug = req.params.slug;
+
+    try {
+        const room = await prisma.room.findFirst({
+            where: {
+                slug
+            }
+        })
+
+        res.json({
+            room
+        })
+    } catch(e) {
+        res.json({
+            message: "Internal Server Error while fetching the chats"
+        })
+    }
+})
 
 app.listen( HTTP_PORT, () => {
     console.log(`Backend URL -> http://localhost:${HTTP_PORT}`)
