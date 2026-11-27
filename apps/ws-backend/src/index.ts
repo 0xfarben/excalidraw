@@ -74,6 +74,7 @@ wss.on('connection', function connection(ws, request) {
         // console.log(`WS Object: ${ws}`)
         const parsedData = JSON.parse(data as unknown as string); // { type: "join_room", roomId: 1 }
 
+        // TODO: check if the room really exists or not.
         if (parsedData.type === "join_room") {
             const user = users.find(x => x.ws === ws);
             user?.rooms.push(parsedData.roomId);
@@ -84,12 +85,15 @@ wss.on('connection', function connection(ws, request) {
             if( !user ) {
                 return;
             }
-            user.rooms = user?.rooms.filter( x => x === parsedData.room );
+            user.rooms = user?.rooms.filter( x => x !== parsedData.room );
         }
 
         if ( parsedData.type === "chat" ) {
             const roomId = parsedData.roomId;
             const message = parsedData.message;
+
+            
+            // TODO: sanity-check the message -> msg is not too long, unwanted chars etc..
 
             // save the chats inside the db.
             // in real-world, DB save will be done using Queues,.

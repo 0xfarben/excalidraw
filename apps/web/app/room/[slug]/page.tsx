@@ -1,17 +1,26 @@
 import axios from "axios";
-import { BACKEND_URL, WS_URL } from "../../config";
+import { BACKEND_URL } from "../../config";
+import { ChatRoom } from "../../../components/ChatRoom";
 
-async function getRoom( slug : string ) {
+// get RoomId by slug
+async function getRoomId( slug : string ) {
     const response = await axios.get(`${BACKEND_URL}/room/${slug}`);
-    return response.data.id;
+    // console.log(response.data)
+    return response.data.room.id;
 }
 
-export default function ChatRoom( 
+// Websocket messaging area/page.
+export default async function ChatRoom1( 
     {params} :
-    { params: {
-        roomId: string
-    }}
-)
-{
-    const roomId = params.roomId;
+    { 
+        params: {
+            slug: string
+        }
+    }
+){   
+    // params is a promise
+    const slug = (await params).slug;
+    const roomId = await getRoomId(slug);
+
+    return <ChatRoom id={roomId}></ChatRoom>
 }

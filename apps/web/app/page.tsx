@@ -6,8 +6,9 @@ import styles from "./page.module.css";
 import { useRouter } from "next/navigation";
 
 export default function Home() {
-  const [roomId, setRoomId ] = useState("");
+  const [slug, setSlug ] = useState("");
   const router = useRouter();
+
   return (
     <div style={{
       display: "flex",
@@ -21,18 +22,18 @@ export default function Home() {
         not slug, because slug is only used to use in the url navigation bar.
       */}
       <input type="text" 
-             value={roomId} 
+             value={slug} 
              onChange={ (e) => {
-              setRoomId(e.target.value);
+              setSlug(e.target.value);
              }}
-             placeholder="Room ID"
+             placeholder="Enter Room Name"
              style={{
               padding: "10px"
              }}
       ></input>
 
       <button onClick={ () => {
-                router.push(`/room/${roomId}`);
+                router.push(`/room/${slug}`);
               }} 
               style={{
               padding: "10px"
